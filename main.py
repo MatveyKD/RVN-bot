@@ -2,6 +2,7 @@ import logging
 import gspread
 import json
 import os
+import datetime
 from bot.bot import Bot
 from bot.handler import MessageHandler, BotButtonCommandHandler, StartCommandHandler
 from bot.filter import Filter
@@ -14,26 +15,28 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 
 # GSheets
 gc = gspread.service_account(filename=os.getenv("GSHEETSAPI_FILENAME"))
-WORKSHEET = gc.open("БД чат-бота").sheet1
+sh = gc.open("БД чат-бота")
+WORKSHEET_MAIN = sh.get_worksheet(0)
+WORKSHEET_FEEDBACKS = sh.get_worksheet(2)
 
 # Data
 BRANDS = []
 
 # States
 BRAND_WRT = False
+QUESTMINMAX_WRT = False
+QUEST_WRT = False
+CLAIM_WRT = False
 
 
 def startup(bot, event):
-    print("FCF")
+    print("FCF was COME")
     default_markup = [
-        [
-            {"text": "Кто ведет бренд?", "callbackData": "formanager"},
-            {"text": "Пожаловаться❗", "callbackData": "claim"}
-        ],
-        [
-            {"text": "Задать вопрос❓", "callbackData": "question"},
-            {"text": "Похвалить закупщика❤", "callbackData": "commendation"}
-        ],
+        [{"text": "Кто ведет бренд?", "callbackData": "formanager"}],
+        [{"text": "Вопрос по мин-макс❓", "callbackData": "questionminmax"}],
+        [{"text": "Другой вопрос", "callbackData": "question"}],
+        [{"text": "Пожаловаться", "callbackData": "claim"}],
+        [{"text": "Похвалить закупщика❤", "callbackData": "commendation"}],
     ]
     first_message_text = "*HELP-DESK Отдела Закупок*"
     with open("Holodnyj-zvonok.jpg", 'rb') as file:
@@ -44,19 +47,23 @@ def startup(bot, event):
             inline_keyboard_markup=json.dumps(default_markup),
             parse_mode='MarkdownV2'
         )
-    print("C")
-    # bot.send_text(
-    #     chat_id=event.from_chat,
-    #     text=first_message_text,
-    #     inline_keyboard_markup=json.dumps(default_markup)
-    # )
+    print("C STARTED BOT")
 
 
 def wrote_text(bot, event):
-    global BRAND_WRT
+    global BRAND_WRT, QUESTMINMAX_WRT, QUEST_WRT, CLAIM_WRT
     if BRAND_WRT:
         BRAND_WRT = False
         choose_brand(bot, event)
+    elif QUESTMINMAX_WRT:
+        QUESTMINMAX_WRT = False
+        questionminmax_send(bot, event)
+    elif QUEST_WRT:
+        QUEST_WRT = False
+        question_send(bot, event)
+    elif CLAIM_WRT:
+        CLAIM_WRT = False
+        claim_send(bot, event)
     else:
         startup(bot, event)
 
@@ -76,18 +83,18 @@ def formanager(bot, event):
 
 def choose_brand(bot, event):
     global BRANDS
-    print("CH")
+    print("PH was triggered...")
     # bot.answer_callback_query(
     #     query_id=event.data['queryId'],
     #     text='Поставщики'
     # )
     br = event.data["text"]
-    values_list = WORKSHEET.col_values(1)
+    values_list = WORKSHEET_MAIN.col_values(1)
     BRANDS = []
     for i, v in enumerate(values_list):
         if br.lower() in v.lower() or v.lower() in br.lower():
             print(i + 1, 1)
-            print(WORKSHEET.cell(i + 1, 2).value)
+            print(WORKSHEET_MAIN.cell(i + 1, 2).value)
             BRANDS.append((v, i+1))
     default_markup = []
     if len(BRANDS) == 0:
@@ -116,7 +123,7 @@ def choose_brand(bot, event):
 
 
 def gotbrand1(bot, event):
-    manager = WORKSHEET.cell(BRANDS[0][1], 2).value
+    manager = WORKSHEET_MAIN.cell(BRANDS[0][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -130,7 +137,7 @@ def gotbrand1(bot, event):
 
 
 def gotbrand2(bot, event):
-    manager = WORKSHEET.cell(BRANDS[1][1], 2).value
+    manager = WORKSHEET_MAIN.cell(BRANDS[1][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -144,7 +151,7 @@ def gotbrand2(bot, event):
 
 
 def gotbrand3(bot, event):
-    manager = WORKSHEET.cell(BRANDS[2][1], 2).value
+    manager = WORKSHEET_MAIN.cell(BRANDS[2][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -158,7 +165,7 @@ def gotbrand3(bot, event):
 
 
 def gotbrand4(bot, event):
-    manager = WORKSHEET.cell(BRANDS[3][1], 2).value
+    manager = WORKSHEET_MAIN.cell(BRANDS[3][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -172,7 +179,7 @@ def gotbrand4(bot, event):
 
 
 def gotbrand5(bot, event):
-    manager = WORKSHEET.cell(BRANDS[4][1], 2).value
+    manager = WORKSHEET_MAIN.cell(BRANDS[4][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -185,11 +192,120 @@ def gotbrand5(bot, event):
     )
 
 
+def questionminmax(bot, event):
+    global QUESTMINMAX_WRT
+    default_markup = [
+        [{"text": "Назад", "callbackData": "startup"}],
+    ]
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Введите сообщение и нажмите отправить",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+    QUESTMINMAX_WRT = True
+
+
+def questionminmax_send(bot, event):
+    default_markup = [
+        [{"text": "В меню", "callbackData": "startup"}],
+    ]
+
+    cur_row = len(WORKSHEET_FEEDBACKS.col_values(1))+1
+
+    # Add row with question to Gsheet
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Вопрос по мин-макс')  # тип обращения
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
+
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Ваш вопрос был отправлен",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+
+
+def question(bot, event):
+    global QUEST_WRT
+    default_markup = [
+        [{"text": "Назад", "callbackData": "startup"}],
+    ]
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Введите сообщение и нажмите отправить",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+    QUEST_WRT = True
+
+
+def question_send(bot, event):
+    default_markup = [
+        [{"text": "В меню", "callbackData": "startup"}],
+    ]
+
+    cur_row = len(WORKSHEET_FEEDBACKS.col_values(1))+1
+
+    # Add row with question to Gsheet
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Другой вопрос')  # тип обращения
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
+
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Ваш вопрос был отправлен",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+
+
+def claim(bot, event):
+    global CLAIM_WRT
+    default_markup = [
+        [{"text": "Назад", "callbackData": "startup"}],
+    ]
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Введите сообщение и нажмите отправить",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+    CLAIM_WRT = True
+
+
+def claim_send(bot, event):
+    default_markup = [
+        [{"text": "В меню", "callbackData": "startup"}],
+    ]
+
+    cur_row = len(WORKSHEET_FEEDBACKS.col_values(1))+1
+
+    # Add row with question to Gsheet
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Жалоба')  # тип обращения
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
+
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Ваша жалоба была отправлена",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+
+
 def feedback(bot, event):
     bot.answer_callback_query(
         query_id=event.data['queryId'],
         text='Отзывы'
     )
+
     bot.send_text(
         chat_id=event.data['message']['chat']['chatId'],
         text="Менеджерам платят много...",
@@ -205,13 +321,15 @@ def main():
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=startup, filters=Filter.callback_data("startup")))
     bot.dispatcher.add_handler(MessageHandler(filters=Filter.text, callback=wrote_text))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=formanager, filters=Filter.callback_data("formanager")))
-    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=feedback, filters=Filter.callback_data("feedback")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=questionminmax, filters=Filter.callback_data("questionminmax")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=question, filters=Filter.callback_data("question")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=claim, filters=Filter.callback_data("claim")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand1, filters=Filter.callback_data("gotbrand1")))  # got brands (max 5)
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand2, filters=Filter.callback_data("gotbrand2")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand3, filters=Filter.callback_data("gotbrand3")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand4, filters=Filter.callback_data("gotbrand4")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand5, filters=Filter.callback_data("gotbrand5")))
-    print("CCH")
+    print("CCH started polling... Updating begin...")
     bot.start_polling()
 
 
