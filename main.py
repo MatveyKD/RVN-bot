@@ -17,20 +17,27 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 gc = gspread.service_account(filename=os.getenv("GSHEETSAPI_FILENAME"))
 sh = gc.open("БД чат-бота")
 WORKSHEET_MAIN = sh.get_worksheet(0)
+WORKSHEET_BUYERS = sh.get_worksheet(1)
 WORKSHEET_FEEDBACKS = sh.get_worksheet(2)
 
 # Data
 BRANDS = []
+BUYERS = []
+CHOSEN_BUYER = ""
 
 # States
 BRAND_WRT = False
 QUESTMINMAX_WRT = False
 QUEST_WRT = False
 CLAIM_WRT = False
+COMMEND_WRT = False
 
 
 def startup(bot, event):
-    print("FCF was COME")
+    global BRAND_WRT
+    BRAND_WRT = False
+
+    print("FCF was COME")  # ------BOT-STARTED----------
     default_markup = [
         [{"text": "Кто ведет бренд?", "callbackData": "formanager"}],
         [{"text": "Вопрос по мин-макс❓", "callbackData": "questionminmax"}],
@@ -51,9 +58,8 @@ def startup(bot, event):
 
 
 def wrote_text(bot, event):
-    global BRAND_WRT, QUESTMINMAX_WRT, QUEST_WRT, CLAIM_WRT
+    global BRAND_WRT, QUESTMINMAX_WRT, QUEST_WRT, CLAIM_WRT, COMMEND_WRT
     if BRAND_WRT:
-        BRAND_WRT = False
         choose_brand(bot, event)
     elif QUESTMINMAX_WRT:
         QUESTMINMAX_WRT = False
@@ -64,6 +70,9 @@ def wrote_text(bot, event):
     elif CLAIM_WRT:
         CLAIM_WRT = False
         claim_send(bot, event)
+    elif COMMEND_WRT:
+        COMMEND_WRT = False
+        commendation_send(bot, event)
     else:
         startup(bot, event)
 
@@ -82,7 +91,8 @@ def formanager(bot, event):
 
 
 def choose_brand(bot, event):
-    global BRANDS
+    global BRANDS, BRAND_WRT
+    BRAND_WRT = False
     print("PH was triggered...")
     # bot.answer_callback_query(
     #     query_id=event.data['queryId'],
@@ -109,9 +119,9 @@ def choose_brand(bot, event):
         default_markup.append([{"text": brand[0], "callbackData": f"gotbrand{i+1}"}],)
     default_markup.append([{"text": "Уточнить бренд", "callbackData": f"formanager"}], )
 
-    if len(BRANDS[0:5]) >= 5:  # окончание
+    if len(BRANDS[0:5]) >= 5:  # окончание слова
         text = f"Найдено {len(BRANDS[0:5])} брендов."
-    elif len(BRANDS[0:5]) > 1:  # окончание
+    elif len(BRANDS[0:5]) > 1:  # окончание слова
         text = f"Найдено {len(BRANDS[0:5])} бренда."
     else:
         text = f"Найден 1 бренд"
@@ -300,16 +310,117 @@ def claim_send(bot, event):
     )
 
 
-def feedback(bot, event):
-    bot.answer_callback_query(
-        query_id=event.data['queryId'],
-        text='Отзывы'
-    )
+def commendation(bot, event):
+    global BUYERS
+    default_markup = []
+
+    BUYERS = WORKSHEET_BUYERS.col_values(1)[1:]  # without column name
+    for i, buyer in enumerate(BUYERS):
+        default_markup.append([{"text": buyer, "callbackData": f"buyer{i+1}"}])
+    default_markup.append([{"text": "Назад", "callbackData": "startup"}])
 
     bot.send_text(
         chat_id=event.data['message']['chat']['chatId'],
-        text="Менеджерам платят много...",
-        # inline_keyboard_markup=json.dumps(buttons)
+        text="Выберите закупщика из списка",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+
+
+def ch_buyer1(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[0]
+    buyer_chd(bot, event)
+
+
+def ch_buyer2(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[1]
+    buyer_chd(bot, event)
+
+
+def ch_buyer3(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[2]
+    buyer_chd(bot, event)
+
+
+def ch_buyer4(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[3]
+    buyer_chd(bot, event)
+
+
+def ch_buyer5(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[4]
+    buyer_chd(bot, event)
+
+
+def ch_buyer6(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[5]
+    buyer_chd(bot, event)
+
+
+def ch_buyer7(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[6]
+    buyer_chd(bot, event)
+
+
+def ch_buyer8(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[7]
+    buyer_chd(bot, event)
+
+
+def ch_buyer9(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[8]
+    buyer_chd(bot, event)
+
+
+def ch_buyer10(bot, event):
+    global CHOSEN_BUYER
+    CHOSEN_BUYER = BUYERS[9]
+    buyer_chd(bot, event)
+
+
+def buyer_chd(bot, event):
+    global COMMEND_WRT
+    default_markup = [
+        [{"text": "Назад", "callbackData": "commendation"}],
+    ]
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Введите сообщение и нажмите отправить",
+        inline_keyboard_markup=json.dumps(default_markup)
+    )
+    COMMEND_WRT = True
+
+
+def commendation_send(bot, event):
+    global CHOSEN_BUYER
+    default_markup = [
+        [{"text": "В меню", "callbackData": "startup"}],
+    ]
+
+    cur_row = len(WORKSHEET_FEEDBACKS.col_values(1)) + 1
+
+    # Add row with question to Gsheet
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Похвала')  # тип обращения
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 9, CHOSEN_BUYER)
+
+    bot.send_text(
+        chat_id=event.from_chat,
+        text=f"Ваша похвала была отправлена",
+        inline_keyboard_markup=json.dumps(default_markup)
     )
 
 
@@ -320,15 +431,27 @@ def main():
     bot.dispatcher.add_handler(StartCommandHandler(callback=startup))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=startup, filters=Filter.callback_data("startup")))
     bot.dispatcher.add_handler(MessageHandler(filters=Filter.text, callback=wrote_text))
-    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=formanager, filters=Filter.callback_data("formanager")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=questionminmax, filters=Filter.callback_data("questionminmax")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=question, filters=Filter.callback_data("question")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=claim, filters=Filter.callback_data("claim")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=formanager, filters=Filter.callback_data("formanager")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand1, filters=Filter.callback_data("gotbrand1")))  # got brands (max 5)
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand2, filters=Filter.callback_data("gotbrand2")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand3, filters=Filter.callback_data("gotbrand3")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand4, filters=Filter.callback_data("gotbrand4")))
     bot.dispatcher.add_handler(BotButtonCommandHandler(callback=gotbrand5, filters=Filter.callback_data("gotbrand5")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=commendation, filters=Filter.callback_data("commendation")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer1, filters=Filter.callback_data("buyer1")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer2, filters=Filter.callback_data("buyer2")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer3, filters=Filter.callback_data("buyer3")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer4, filters=Filter.callback_data("buyer4")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer5, filters=Filter.callback_data("buyer5")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer6, filters=Filter.callback_data("buyer6")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer7, filters=Filter.callback_data("buyer7")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer8, filters=Filter.callback_data("buyer8")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer9, filters=Filter.callback_data("buyer9")))
+    bot.dispatcher.add_handler(BotButtonCommandHandler(callback=ch_buyer10, filters=Filter.callback_data("buyer10")))
+
     print("CCH started polling... Updating begin...")
     bot.start_polling()
 
