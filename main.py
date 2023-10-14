@@ -141,7 +141,7 @@ def gotbrand1(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответсвенный за бренд {BRANDS[0][0]}: {manager}",
+        text=f"Ответственный за бренд {BRANDS[0][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
@@ -155,7 +155,7 @@ def gotbrand2(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответсвенный за бренд {BRANDS[1][0]}: {manager}",
+        text=f"Ответственный за бренд {BRANDS[1][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
@@ -169,7 +169,7 @@ def gotbrand3(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответсвенный за бренд {BRANDS[2][0]}: {manager}",
+        text=f"Ответственный за бренд {BRANDS[2][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
@@ -183,7 +183,7 @@ def gotbrand4(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответсвенный за бренд {BRANDS[3][0]}: {manager}",
+        text=f"Ответственный за бренд {BRANDS[3][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
@@ -197,7 +197,7 @@ def gotbrand5(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответсвенный за бренд {BRANDS[4][0]}:\n{manager}",
+        text=f"Ответственный за бренд {BRANDS[4][0]}:\n{manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
