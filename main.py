@@ -26,16 +26,13 @@ BUYERS = []
 CHOSEN_BUYER = ""
 
 # States
-BRAND_WRT = False
-QUESTMINMAX_WRT = False
-QUEST_WRT = False
-CLAIM_WRT = False
-COMMEND_WRT = False
+DATA = {}
 
 
 def startup(bot, event):
-    global BRAND_WRT
-    BRAND_WRT = False
+    global DATA
+    DATA[event.from_chat] = {}
+    DATA[event.from_chat]["BRAND_WRT"] = False
 
     print("FCF was COME")  # ------BOT-STARTED----------
     default_markup = [
@@ -58,27 +55,29 @@ def startup(bot, event):
 
 
 def wrote_text(bot, event):
-    global BRAND_WRT, QUESTMINMAX_WRT, QUEST_WRT, CLAIM_WRT, COMMEND_WRT
-    if BRAND_WRT:
+    global DATA
+    if not DATA.get(event.from_chat):
+        startup(bot, event)
+    elif DATA[event.from_chat].get("BRAND_WRT"):
         choose_brand(bot, event)
-    elif QUESTMINMAX_WRT:
-        QUESTMINMAX_WRT = False
+    elif DATA[event.from_chat].get("QUESTMINMAX_WRT"):
+        DATA[event.from_chat]["QUESTMINMAX_WRT"] = False
         questionminmax_send(bot, event)
-    elif QUEST_WRT:
-        QUEST_WRT = False
+    elif DATA[event.from_chat].get("QUEST_WRT"):
+        DATA[event.from_chat]["QUEST_WRT"] = False
         question_send(bot, event)
-    elif CLAIM_WRT:
-        CLAIM_WRT = False
+    elif DATA[event.from_chat].get("CLAIM_WRT"):
+        DATA[event.from_chat]["CLAIM_WRT"] = False
         claim_send(bot, event)
-    elif COMMEND_WRT:
-        COMMEND_WRT = False
+    elif DATA[event.from_chat].get("COMMEND_WRT"):
+        DATA[event.from_chat]["COMMEND_WRT"] = False
         commendation_send(bot, event)
     else:
         startup(bot, event)
 
 
 def formanager(bot, event):
-    global BRAND_WRT
+    global DATA
     default_markup = [
         [{"text": "Назад", "callbackData": "startup"}],
     ]
@@ -87,12 +86,12 @@ def formanager(bot, event):
         text="Введите название бренда и нажмите ввод⤵",
         inline_keyboard_markup=json.dumps(default_markup)
     )
-    BRAND_WRT = True
+    DATA[event.from_chat]["BRAND_WRT"] = True
 
 
 def choose_brand(bot, event):
-    global BRANDS, BRAND_WRT
-    BRAND_WRT = False
+    global DATA
+    DATA[event.from_chat]["BRAND_WRT"] = False
     print("PH was triggered...")
     # bot.answer_callback_query(
     #     query_id=event.data['queryId'],
@@ -100,14 +99,16 @@ def choose_brand(bot, event):
     # )
     br = event.data["text"]
     values_list = WORKSHEET_MAIN.col_values(1)
-    BRANDS = []
+    DATA[event.from_chat]["BRANDS"] = []
     for i, v in enumerate(values_list):
         if br.lower() in v.lower() or v.lower() in br.lower():
             print(i + 1, 1)
             print(WORKSHEET_MAIN.cell(i + 1, 2).value)
-            BRANDS.append((v, i+1))
+            DATA[event.from_chat]["BRANDS"].append((v, i+1))
+            if len(DATA[event.from_chat]["BRANDS"]) >= 5:
+                break
     default_markup = []
-    if len(BRANDS) == 0:
+    if len(DATA[event.from_chat]["BRANDS"]) == 0:
         default_markup.append([{"text": "Уточнить бренд", "callbackData": f"formanager"}])
         bot.send_text(
             chat_id=event.from_chat,
@@ -115,14 +116,14 @@ def choose_brand(bot, event):
             inline_keyboard_markup=json.dumps(default_markup)
         )
         return  # leave func
-    for i, brand in enumerate(BRANDS[0:5]):
+    for i, brand in enumerate(DATA[event.from_chat]["BRANDS"][0:5]):
         default_markup.append([{"text": brand[0], "callbackData": f"gotbrand{i+1}"}],)
     default_markup.append([{"text": "Уточнить бренд", "callbackData": f"formanager"}], )
 
-    if len(BRANDS[0:5]) >= 5:  # окончание слова
-        text = f"Найдено {len(BRANDS[0:5])} брендов."
-    elif len(BRANDS[0:5]) > 1:  # окончание слова
-        text = f"Найдено {len(BRANDS[0:5])} бренда."
+    if len(DATA[event.from_chat]['BRANDS'][0:5]) >= 5:  # окончание слова
+        text = f"Найдено {len(DATA[event.from_chat]['BRANDS'][0:5])} брендов."
+    elif len(DATA[event.from_chat]['BRANDS'][0:5]) > 1:  # окончание слова
+        text = f"Найдено {len(DATA[event.from_chat]['BRANDS'][0:5])} бренда."
     else:
         text = f"Найден 1 бренд"
     bot.send_text(
@@ -133,7 +134,7 @@ def choose_brand(bot, event):
 
 
 def gotbrand1(bot, event):
-    manager = WORKSHEET_MAIN.cell(BRANDS[0][1], 2).value
+    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][0][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -141,13 +142,13 @@ def gotbrand1(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответственный за бренд {BRANDS[0][0]}: {manager}",
+        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][0][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
 
 def gotbrand2(bot, event):
-    manager = WORKSHEET_MAIN.cell(BRANDS[1][1], 2).value
+    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][1][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -155,13 +156,13 @@ def gotbrand2(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответственный за бренд {BRANDS[1][0]}: {manager}",
+        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][1][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
 
 def gotbrand3(bot, event):
-    manager = WORKSHEET_MAIN.cell(BRANDS[2][1], 2).value
+    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][2][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -169,13 +170,13 @@ def gotbrand3(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответственный за бренд {BRANDS[2][0]}: {manager}",
+        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][2][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
 
 def gotbrand4(bot, event):
-    manager = WORKSHEET_MAIN.cell(BRANDS[3][1], 2).value
+    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][3][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -183,13 +184,13 @@ def gotbrand4(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответственный за бренд {BRANDS[3][0]}: {manager}",
+        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][3][0]}: {manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
 
 def gotbrand5(bot, event):
-    manager = WORKSHEET_MAIN.cell(BRANDS[4][1], 2).value
+    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][4][1], 2).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -197,13 +198,13 @@ def gotbrand5(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответственный за бренд {BRANDS[4][0]}:\n{manager}",
+        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][4][0]}:\n{manager}",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
 
 def questionminmax(bot, event):
-    global QUESTMINMAX_WRT
+    global DATA
     default_markup = [
         [{"text": "Назад", "callbackData": "startup"}],
     ]
@@ -212,7 +213,7 @@ def questionminmax(bot, event):
         text=f"Введите сообщение и нажмите отправить",
         inline_keyboard_markup=json.dumps(default_markup)
     )
-    QUESTMINMAX_WRT = True
+    DATA[event.from_chat]["QUESTMINMAX_WRT"] = True
 
 
 def questionminmax_send(bot, event):
@@ -239,7 +240,7 @@ def questionminmax_send(bot, event):
 
 
 def question(bot, event):
-    global QUEST_WRT
+    global DATA
     default_markup = [
         [{"text": "Назад", "callbackData": "startup"}],
     ]
@@ -248,7 +249,7 @@ def question(bot, event):
         text=f"Введите сообщение и нажмите отправить",
         inline_keyboard_markup=json.dumps(default_markup)
     )
-    QUEST_WRT = True
+    DATA[event.from_chat]["QUEST_WRT"] = True
 
 
 def question_send(bot, event):
@@ -275,7 +276,7 @@ def question_send(bot, event):
 
 
 def claim(bot, event):
-    global CLAIM_WRT
+    global DATA
     default_markup = [
         [{"text": "Назад", "callbackData": "startup"}],
     ]
@@ -284,7 +285,7 @@ def claim(bot, event):
         text=f"Введите сообщение и нажмите отправить",
         inline_keyboard_markup=json.dumps(default_markup)
     )
-    CLAIM_WRT = True
+    DATA[event.from_chat]["CLAIM_WRT"] = True
 
 
 def claim_send(bot, event):
@@ -311,11 +312,11 @@ def claim_send(bot, event):
 
 
 def commendation(bot, event):
-    global BUYERS
+    global DATA
     default_markup = []
 
-    BUYERS = WORKSHEET_BUYERS.col_values(1)[1:]  # without column name
-    for i, buyer in enumerate(BUYERS):
+    DATA[event.from_chat]["BUYERS"] = WORKSHEET_BUYERS.col_values(1)[1:]  # without column name
+    for i, buyer in enumerate(DATA[event.from_chat]["BUYERS"]):
         default_markup.append([{"text": buyer, "callbackData": f"buyer{i+1}"}])
     default_markup.append([{"text": "Назад", "callbackData": "startup"}])
 
@@ -327,67 +328,67 @@ def commendation(bot, event):
 
 
 def ch_buyer1(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[0]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][0]
     buyer_chd(bot, event)
 
 
 def ch_buyer2(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[1]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][1]
     buyer_chd(bot, event)
 
 
 def ch_buyer3(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[2]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][2]
     buyer_chd(bot, event)
 
 
 def ch_buyer4(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[3]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][3]
     buyer_chd(bot, event)
 
 
 def ch_buyer5(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[4]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][4]
     buyer_chd(bot, event)
 
 
 def ch_buyer6(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[5]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][5]
     buyer_chd(bot, event)
 
 
 def ch_buyer7(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[6]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][6]
     buyer_chd(bot, event)
 
 
 def ch_buyer8(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[7]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][7]
     buyer_chd(bot, event)
 
 
 def ch_buyer9(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[8]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][8]
     buyer_chd(bot, event)
 
 
 def ch_buyer10(bot, event):
-    global CHOSEN_BUYER
-    CHOSEN_BUYER = BUYERS[9]
+    global DATA
+    DATA[event.from_chat]["CHOSEN_BUYER"] = DATA[event.from_chat]["BUYERS"][9]
     buyer_chd(bot, event)
 
 
 def buyer_chd(bot, event):
-    global COMMEND_WRT
+    global DATA
     default_markup = [
         [{"text": "Назад", "callbackData": "commendation"}],
     ]
@@ -396,11 +397,11 @@ def buyer_chd(bot, event):
         text=f"Введите сообщение и нажмите отправить",
         inline_keyboard_markup=json.dumps(default_markup)
     )
-    COMMEND_WRT = True
+    DATA[event.from_chat]["COMMEND_WRT"] = True
 
 
 def commendation_send(bot, event):
-    global CHOSEN_BUYER
+    global DATA
     default_markup = [
         [{"text": "В меню", "callbackData": "startup"}],
     ]
@@ -415,7 +416,7 @@ def commendation_send(bot, event):
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Похвала')  # тип обращения
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 9, CHOSEN_BUYER)
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 9, DATA[event.from_chat]["CHOSEN_BUYER"])
 
     bot.send_text(
         chat_id=event.from_chat,
