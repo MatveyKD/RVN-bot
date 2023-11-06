@@ -105,8 +105,10 @@ def choose_brand(bot, event):
             print(i + 1, 1)
             print(WORKSHEET_MAIN.cell(i + 1, 2).value)
             DATA[event.from_chat]["BRANDS"].append((v, i+1))
-            if len(DATA[event.from_chat]["BRANDS"]) >= 5:
-                break
+            # if len(DATA[event.from_chat]["BRANDS"]) >= 5:
+            #     break
+            # Нужно проходиться по всему чтобы получить общее число найденных брендов
+            # А в чем смысл? это же замедляет скрипт
     default_markup = []
     if len(DATA[event.from_chat]["BRANDS"]) == 0:
         default_markup.append([{"text": "Уточнить бренд", "callbackData": f"formanager"}])
@@ -120,12 +122,15 @@ def choose_brand(bot, event):
         default_markup.append([{"text": brand[0], "callbackData": f"gotbrand{i+1}"}],)
     default_markup.append([{"text": "Уточнить бренд", "callbackData": f"formanager"}], )
 
-    if len(DATA[event.from_chat]['BRANDS'][0:5]) >= 5:  # окончание слова
-        text = f"Найдено {len(DATA[event.from_chat]['BRANDS'][0:5])} брендов."
-    elif len(DATA[event.from_chat]['BRANDS'][0:5]) > 1:  # окончание слова
-        text = f"Найдено {len(DATA[event.from_chat]['BRANDS'][0:5])} бренда."
-    else:
-        text = f"Найден 1 бренд"
+    # if len(DATA[event.from_chat]['BRANDS'][0:5]) >= 5:  # окончание слова
+    #     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
+    # elif len(DATA[event.from_chat]['BRANDS'][0:5]) > 1:  # окончание слова
+    #     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
+    # else:
+    #     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
+    text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
+    if len(DATA[event.from_chat]['BRANDS']) > 5:
+        text += "\nВывожу первые 5"
     bot.send_text(
         chat_id=event.from_chat,
         text=text,
@@ -261,7 +266,7 @@ def question_send(bot, event):
 
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
@@ -297,7 +302,7 @@ def claim_send(bot, event):
 
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
@@ -315,9 +320,13 @@ def commendation(bot, event):
     global DATA
     default_markup = []
 
-    DATA[event.from_chat]["BUYERS"] = WORKSHEET_BUYERS.col_values(1)[1:]  # without column name
-    for i, buyer in enumerate(DATA[event.from_chat]["BUYERS"]):
-        default_markup.append([{"text": buyer, "callbackData": f"buyer{i+1}"}])
+    DATA[event.from_chat]["WORKERS"] = WORKSHEET_BUYERS.col_values(1)[1:]  # without column name
+    DATA[event.from_chat]["BUYERS"] = []
+    workers_roles = WORKSHEET_BUYERS.col_values(2)[1:]  # without column name
+    for i, worker in enumerate(DATA[event.from_chat]["WORKERS"]):
+        if workers_roles[i] == "Закупки":
+            default_markup.append([{"text": worker, "callbackData": f"buyer{i+1}"}])
+            DATA[event.from_chat]["BUYERS"].append(worker)
     default_markup.append([{"text": "Назад", "callbackData": "startup"}])
 
     bot.send_text(
@@ -410,7 +419,7 @@ def commendation_send(bot, event):
 
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])

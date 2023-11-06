@@ -42,11 +42,9 @@ def main():
                     elif feedback_type == 'Жалоба':
                         text = f'''На вашу жалобу ответил {responsible}:
 {answer}'''
-                    else:
-                        text = f'''На ваше сообщение ответил {responsible}:
-{answer}'''
                     print(f"{chat_id}:{msg_id}:{responsible}:{answer}")
                     bot.send_text(chat_id=chat_id, text=text, reply_msg_id=msg_id)
+                    WORKSHEET_FEEDBACKS.update_cell(row+1, 13, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
         time.sleep(checking_delay)
 
 
