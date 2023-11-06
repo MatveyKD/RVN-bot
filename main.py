@@ -138,8 +138,17 @@ def choose_brand(bot, event):
     )
 
 
-def gotbrand1(bot, event):
-    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][0][1], 2).value
+def gotbrand1(bot, event): brand_got(bot, event, 0)
+def gotbrand2(bot, event): brand_got(bot, event, 1)
+def gotbrand3(bot, event): brand_got(bot, event, 2)
+def gotbrand4(bot, event): brand_got(bot, event, 3)
+def gotbrand5(bot, event): brand_got(bot, event, 4)
+
+
+def brand_got(bot, event, manager_ind):
+    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][manager_ind][1], 2).value
+    row = WORKSHEET_BUYERS.find(manager).row
+    nickname, phonenumber = WORKSHEET_BUYERS.cell(row, 4).value, WORKSHEET_BUYERS.cell(row, 5).value
     default_markup = [
         [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
         [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
@@ -147,63 +156,8 @@ def gotbrand1(bot, event):
     ]
     bot.send_text(
         chat_id=event.from_chat,
-        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][0][0]}: {manager}",
-        inline_keyboard_markup=json.dumps(default_markup)
-    )
-
-
-def gotbrand2(bot, event):
-    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][1][1], 2).value
-    default_markup = [
-        [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
-        [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
-        [{"text": "В меню", "callbackData": "startup"}],
-    ]
-    bot.send_text(
-        chat_id=event.from_chat,
-        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][1][0]}: {manager}",
-        inline_keyboard_markup=json.dumps(default_markup)
-    )
-
-
-def gotbrand3(bot, event):
-    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][2][1], 2).value
-    default_markup = [
-        [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
-        [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
-        [{"text": "В меню", "callbackData": "startup"}],
-    ]
-    bot.send_text(
-        chat_id=event.from_chat,
-        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][2][0]}: {manager}",
-        inline_keyboard_markup=json.dumps(default_markup)
-    )
-
-
-def gotbrand4(bot, event):
-    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][3][1], 2).value
-    default_markup = [
-        [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
-        [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
-        [{"text": "В меню", "callbackData": "startup"}],
-    ]
-    bot.send_text(
-        chat_id=event.from_chat,
-        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][3][0]}: {manager}",
-        inline_keyboard_markup=json.dumps(default_markup)
-    )
-
-
-def gotbrand5(bot, event):
-    manager = WORKSHEET_MAIN.cell(DATA[event.from_chat]['BRANDS'][4][1], 2).value
-    default_markup = [
-        [{"text": "Написать сообщение", "callbackData": "sendmsg"}],
-        [{"text": "Проверить другой бренд", "callbackData": "formanager"}],
-        [{"text": "В меню", "callbackData": "startup"}],
-    ]
-    bot.send_text(
-        chat_id=event.from_chat,
-        text=f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][4][0]}:\n{manager}",
+        text=f"""Ответственный за бренд {DATA[event.from_chat]['BRANDS'][manager_ind][0]}: {manager}
+Контакты: @{nickname}; {phonenumber}""",
         inline_keyboard_markup=json.dumps(default_markup)
     )
 
@@ -228,11 +182,17 @@ def questionminmax_send(bot, event):
 
     cur_row = len(WORKSHEET_FEEDBACKS.col_values(1))+1
 
+    buyer = WORKSHEET_BUYERS.find(event.data['from']['nick'])
+    if buyer:
+        full_name = WORKSHEET_BUYERS.cell(buyer.row, 1).value
+    else:
+        full_name = f"{event.data['from']['firstName']} {event.data['from']['lastName']}"
+
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now()))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, full_name)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Вопрос по мин-макс')  # тип обращения
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
@@ -264,11 +224,17 @@ def question_send(bot, event):
 
     cur_row = len(WORKSHEET_FEEDBACKS.col_values(1))+1
 
+    buyer = WORKSHEET_BUYERS.find(event.data['from']['nick'])
+    if buyer:
+        full_name = WORKSHEET_BUYERS.cell(buyer.row, 1).value
+    else:
+        full_name = f"{event.data['from']['firstName']} {event.data['from']['lastName']}"
+
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, full_name)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Другой вопрос')  # тип обращения
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
@@ -300,11 +266,17 @@ def claim_send(bot, event):
 
     cur_row = len(WORKSHEET_FEEDBACKS.col_values(1))+1
 
+    buyer = WORKSHEET_BUYERS.find(event.data['from']['nick'])
+    if buyer:
+        full_name = WORKSHEET_BUYERS.cell(buyer.row, 1).value
+    else:
+        full_name = f"{event.data['from']['firstName']} {event.data['from']['lastName']}"
+
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, full_name)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Жалоба')  # тип обращения
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
@@ -417,11 +389,17 @@ def commendation_send(bot, event):
 
     cur_row = len(WORKSHEET_FEEDBACKS.col_values(1)) + 1
 
+    buyer = WORKSHEET_BUYERS.find(event.data['from']['nick'])
+    if buyer:
+        full_name = WORKSHEET_BUYERS.cell(buyer.row, 1).value
+    else:
+        full_name = f"{event.data['from']['firstName']} {event.data['from']['lastName']}"
+
     # Add row with question to Gsheet
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 1, cur_row)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 2, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 3, event.data['from']['userId'])
-    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, f"{event.data['from']['firstName']} {event.data['from']['lastName']}")
+    WORKSHEET_FEEDBACKS.update_cell(cur_row, 4, full_name)
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 6, event.data['msgId'])
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 7, 'Похвала')  # тип обращения
     WORKSHEET_FEEDBACKS.update_cell(cur_row, 8, event.data['text'])
