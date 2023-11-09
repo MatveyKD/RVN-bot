@@ -155,7 +155,7 @@ def brand_got(bot, event, manager_ind):
         [{"text": "В меню", "callbackData": "startup"}],
     ]
     text = f"Ответственный за бренд {DATA[event.from_chat]['BRANDS'][manager_ind][0]}: {manager}"
-    if nickname or phonenumber: text += "\nКонтакты"
+    if nickname or phonenumber: text += "\n"
     if nickname:
         text += f"@{nickname}"
         if phonenumber: text += "; "
