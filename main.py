@@ -34,15 +34,15 @@ def startup(bot, event):
     DATA[event.from_chat] = {}
     DATA[event.from_chat]["BRAND_WRT"] = False
 
-    print("FCF was COME")  # ------BOT-STARTED----------
+    print("FCF was started")  # ------BOT-STARTED----------
     default_markup = [
-        [{"text": "Кто ведет бренд?", "callbackData": "formanager"}],
-        [{"text": "Вопрос по мин-макс❓", "callbackData": "questionminmax"}],
-        [{"text": "Другой вопрос", "callbackData": "question"}],
-        [{"text": "Пожаловаться", "callbackData": "claim"}],
-        [{"text": "Похвалить закупщика❤", "callbackData": "commendation"}],
+        [{"text": "Кто ведет бренд?ℹ", "callbackData": "formanager"}],
+        [{"text": "Вопрос по мин-макс📦", "callbackData": "questionminmax"}],
+        [{"text": "Другой вопрос🤔", "callbackData": "question"}],
+        [{"text": "Пожаловаться🤬", "callbackData": "claim"}],
+        [{"text": "Похвалить закупщика♥", "callbackData": "commendation"}],
     ]
-    first_message_text = "*HELP-DESK Отдела Закупок*"
+    first_message_text = "*HELP-DESK Отдела Закупок RVN-Group*"
     with open("Holodnyj-zvonok.jpg", 'rb') as file:
         bot.send_file(
             chat_id=event.from_chat,
@@ -122,12 +122,6 @@ def choose_brand(bot, event):
         default_markup.append([{"text": brand[0], "callbackData": f"gotbrand{i+1}"}],)
     default_markup.append([{"text": "Уточнить бренд", "callbackData": f"formanager"}], )
 
-    # if len(DATA[event.from_chat]['BRANDS'][0:5]) >= 5:  # окончание слова
-    #     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
-    # elif len(DATA[event.from_chat]['BRANDS'][0:5]) > 1:  # окончание слова
-    #     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
-    # else:
-    #     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
     text = f"Результаты поиска: {len(DATA[event.from_chat]['BRANDS'])}."
     if len(DATA[event.from_chat]['BRANDS']) > 5:
         text += "\nВывожу первые 5"
