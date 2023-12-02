@@ -9,6 +9,10 @@ from bot.handler import MessageHandler, BotButtonCommandHandler, StartCommandHan
 from bot.filter import Filter
 from dotenv import load_dotenv
 
+
+# Универсален, отправляет и в TG, и в ICQ, просто добавить еще мессенджер
+# Загрузка из Гугл Таблицы также в отдельном скрипте
+
 load_dotenv()
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
@@ -26,7 +30,6 @@ def main():
     checking_delay = int(os.getenv("CHECKING_DELAY"))
     while True:
         values_list = WORKSHEET_FEEDBACKS.col_values(11)
-        print(values_list)
         for row, value in enumerate(values_list):
             if value == 'TRUE' and WORKSHEET_FEEDBACKS.cell(row+1, 12).value == 'FALSE':
                 chat_id = WORKSHEET_FEEDBACKS.cell(row+1, 3).value
@@ -42,9 +45,8 @@ def main():
                     elif feedback_type == 'Жалоба':
                         text = f'''На вашу жалобу ответил {responsible}:
 {answer}'''
-		    else:
-			continue
-                    print(f"{chat_id}:{msg_id}:{responsible}:{answer}")
+                    else:
+                        continue
                     bot.send_text(chat_id=chat_id, text=text, reply_msg_id=msg_id)
                     WORKSHEET_FEEDBACKS.update_cell(row+1, 13, str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
         time.sleep(checking_delay)
